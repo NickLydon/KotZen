@@ -4,22 +4,22 @@ import kotlin.test.assertEquals
 class AtLeastOneTest {
     @Test
     fun ifNotFoundReturnsNull() {
-        assertEquals(null, sat { x -> x == 'a' }.atLeastOne()("b"))
+        assertEquals(null, sat { x -> x == 'a' }.atLeastOne()("b".parseable()))
     }
 
     @Test
     fun returnsOne() {
-        assertEquals(Pair("b", listOf('a')), sat { x -> x == 'a' }.atLeastOne()("ab"))
+        assertEquals(Pair("ab".parseable(1), listOf('a')), sat { x -> x == 'a' }.atLeastOne()("ab".parseable()))
     }
 
     @Test
     fun returnsTwo() {
-        assertEquals(Pair("b", listOf('a', 'a')), sat { x -> x == 'a' }.atLeastOne()("aab"))
+        assertEquals(Pair("aab".parseable(2), listOf('a', 'a')), sat { x -> x == 'a' }.atLeastOne()("aab".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item.atLeastOne()(""))
+        assertEquals(null, item.atLeastOne()("".parseable()))
     }
 }
 

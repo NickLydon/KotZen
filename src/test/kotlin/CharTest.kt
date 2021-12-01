@@ -4,17 +4,17 @@ import kotlin.test.assertEquals
 class CharTest {
     @Test
     fun satisfiesFunctionReturnsValue() {
-        assertEquals(Pair("", 'a'), char('a')("a"))
+        assertEquals(Pair("a".parseable(1), 'a'), char('a')("a".parseable()))
     }
 
     @Test
     fun doesNotSatisfyReturnsNull() {
-        assertEquals(null, char('b')("a"))
+        assertEquals(null, char('b')("a".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, char('b')(""))
+        assertEquals(null, char('b')("".parseable()))
     }
 }
 

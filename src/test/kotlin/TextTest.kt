@@ -4,11 +4,11 @@ import kotlin.test.assertEquals
 class TextTest {
     @Test
     fun satisfiesFunctionReturnsValue() {
-        assertEquals(Pair("", "aaa"), char('a').many().text()("aaa"))
+        assertEquals(Pair("aaa".parseable(3), "aaa"), char('a').many().text()("aaa".parseable()))
     }
 
     @Test
     fun emptyReturnsEmpty() {
-        assertEquals(Pair("", ""), item.many().text()(""))
+        assertEquals(Pair("".parseable(), ""), item.many().text()("".parseable()))
     }
 }

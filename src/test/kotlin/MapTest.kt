@@ -4,17 +4,17 @@ import kotlin.test.assertEquals
 class MapTest {
     @Test
     fun mapsAChar() {
-        assertEquals(Pair("", 'A'), item.map { x -> x.uppercaseChar() }("a"))
+        assertEquals(Pair("a".parseable(1), 'A'), item.map { x -> x.uppercaseChar() }("a".parseable()))
     }
 
     @Test
     fun mapsAChar2() {
-        assertEquals(Pair("b", 'A'), item.map { x -> x.uppercaseChar() }("ab"))
+        assertEquals(Pair("ab".parseable(1), 'A'), item.map { x -> x.uppercaseChar() }("ab".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item.map { x -> x.uppercaseChar() }(""))
+        assertEquals(null, item.map { x -> x.uppercaseChar() }("".parseable()))
     }
 }
 

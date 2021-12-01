@@ -4,22 +4,22 @@ import kotlin.test.assertEquals
 class DelimitedByTest {
     @Test
     fun returnsIfNoDelimiterPresent() {
-        assertEquals(Pair("a", listOf('a')), char('a').delimitedBy(char(','))("aa"))
+        assertEquals(Pair("aa".parseable(1), listOf('a')), char('a').delimitedBy(char(','))("aa".parseable()))
     }
 
     @Test
     fun stripsDelimiter() {
-        assertEquals(Pair("", listOf('a', 'a', 'a')), char('a').delimitedBy(char(','))("a,a,a"))
+        assertEquals(Pair("a,a,a".parseable(5), listOf('a', 'a', 'a')), char('a').delimitedBy(char(','))("a,a,a".parseable()))
     }
 
     @Test
     fun stopsIfNoMatchBetweenDelimiters() {
-        assertEquals(Pair(",,a", listOf('a')), char('a').delimitedBy(char(','))("a,,a"))
+        assertEquals(Pair("a,,a".parseable(1), listOf('a')), char('a').delimitedBy(char(','))("a,,a".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, char('a').delimitedBy(char(','))(""))
+        assertEquals(null, char('a').delimitedBy(char(','))("".parseable()))
     }
 }
 

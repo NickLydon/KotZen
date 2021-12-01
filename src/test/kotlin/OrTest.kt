@@ -4,17 +4,17 @@ import kotlin.test.assertEquals
 class OrTest {
     @Test
     fun orReturnsFirstSuccess() {
-        assertEquals(Pair("b", 'a'), sat { x -> x == 'a' }.or(sat { x -> x == 'b' })("ab"))
+        assertEquals(Pair("ab".parseable(1), 'a'), sat { x -> x == 'a' }.or(sat { x -> x == 'b' })("ab".parseable()))
     }
 
     @Test
     fun orReturnsFirstSuccess2() {
-        assertEquals(Pair("a", 'b'), sat { x -> x == 'a' }.or(sat { x -> x == 'b' })("ba"))
+        assertEquals(Pair("ba".parseable(1), 'b'), sat { x -> x == 'a' }.or(sat { x -> x == 'b' })("ba".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item.or(item)(""))
+        assertEquals(null, item.or(item)("".parseable()))
     }
 }
 

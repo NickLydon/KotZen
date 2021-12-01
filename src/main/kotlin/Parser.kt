@@ -1,28 +1,44 @@
-typealias ParserOutput<T> = Pair<String, T>
-typealias Parser<T> = (String) -> ParserOutput<T>?
+typealias ParserOutput<T> = Pair<Parseable, T>
+typealias Parser<T> = (Parseable) -> ParserOutput<T>?
+interface Parseable {
+    fun advance(steps: Int) : Parseable
+    fun remaining() : Int
+    fun head() : Char
+    fun isEmpty() = remaining() == 0
+    fun unparsed() : String
+}
+
+data class StringParseable(private val string: String, private val index : Int = 0) : Parseable {
+    override fun advance(steps: Int): Parseable = StringParseable(string, index + steps)
+    override fun remaining(): Int = 0.coerceAtLeast(string.length - index)
+    override fun head(): Char = string[index]
+    override fun unparsed(): String = string.substring(index)
+}
+
+fun String.parseable(index : Int = 0) = StringParseable(this, index)
 
 fun <T> Parser<T>.parse(input: String): T {
-    val output = this(input) ?: error("Invalid input")
+    val output = this(StringParseable(input)) ?: error("Invalid input")
 
-    if (output.first != "") error("Unconsumed input: " + output.first)
+    if (!output.first.isEmpty()) error("Unconsumed input: " + output.first.unparsed())
 
     return output.second
 }
 
-fun <S, T> Parser<S>.map(fn: (S) -> T): Parser<T> = { input: String ->
+fun <S, T> Parser<S>.map(fn: (S) -> T): Parser<T> = { input: Parseable ->
     val output = this(input)
     if (output == null) null
     else Pair(output.first, fn(output.second))
 }
 
-val item = { input: String ->
+val item = { input: Parseable ->
     if (input.isEmpty()) null
-    else Pair(input.substring(1), input[0])
+    else Pair(input.advance(1), input.head())
 }
 
 fun Parser<Iterable<Char>>.text() = this.map { it.joinToString("") }
 
-fun sat(fn: (Char) -> Boolean) = { input: String ->
+fun sat(fn: (Char) -> Boolean) = { input: Parseable ->
     val output = item(input)
     if (output == null || !fn(output.second)) null
     else output
@@ -48,11 +64,11 @@ fun <T> Parser<T>.token() =
 
 fun char(c: Char) = sat { c2 -> c == c2 }
 
-fun <T> Parser<T>.or(alternative: Parser<T>) = { input: String ->
+fun <T> Parser<T>.or(alternative: Parser<T>) = { input: Parseable ->
     this(input) ?: alternative(input)
 }
 
-fun <T> pure(default: T) = { input: String ->
+fun <T> pure(default: T) = { input: Parseable ->
     Pair(input, default)
 }
 
@@ -66,7 +82,7 @@ fun <T> Parser<T>.atLeastOne() =
         this.many().map { xs -> listOf(initial) + xs }
     }
 
-fun <T, S> Parser<T>.bind(fn: (T) -> Parser<S>) = { input: String ->
+fun <T, S> Parser<T>.bind(fn: (T) -> Parser<S>) = { input: Parseable ->
     val output = this(input)
     if (output == null) null
     else fn(output.second)(output.first)
@@ -89,7 +105,7 @@ fun symbol(value: String): Parser<String> =
         else symbol(value.substring(1)).map { xs -> c + xs }
     }
 
-fun <T> Parser<T>.peek() = { input: String ->
+fun <T> Parser<T>.peek() = { input: Parseable ->
     val output = this(input)
     if (output == null) null
     else Pair(input, Unit)
@@ -99,13 +115,13 @@ fun <S, T> Parser<S>.until(next: Parser<T>): Parser<Iterable<S>> =
     next.peek().map { listOf<S>() }
         .or(this.bind { x -> until(next).map { xs -> listOf(x) + xs } })
 
-fun <S, T> Parser<S>.except(next: Parser<T>): Parser<S> = { input: String ->
+fun <S, T> Parser<S>.except(next: Parser<T>): Parser<S> = { input: Parseable ->
     val output = next(input)
     if (output != null) null
     else this(input)
 }
 
-fun <T> defer(fn: () -> Parser<T>) = { input: String -> fn()(input) }
+fun <T> defer(fn: () -> Parser<T>) = { input: Parseable -> fn()(input) }
 
 sealed class Option<T> {
     class None<T> : Option<T>()
@@ -114,7 +130,7 @@ sealed class Option<T> {
     fun valueOrDefault(default: T) = if (this is Some<T>) value else default
 }
 
-fun <T> Parser<T>.optional() = { input: String ->
+fun <T> Parser<T>.optional() = { input: Parseable ->
     val output = this(input)
     if (output == null) Pair(input, Option.None<T>())
     else Pair(output.first, Option.Some(output.second))

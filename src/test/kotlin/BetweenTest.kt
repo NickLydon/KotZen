@@ -4,26 +4,26 @@ import kotlin.test.assertEquals
 class BetweenTest {
     @Test
     fun returnsIfInBookends() {
-        assertEquals(Pair("", 'a'), char('a').between(char('['), char(']'))("[a]"))
+        assertEquals(Pair("[a]".parseable(3), 'a'), char('a').between(char('['), char(']'))("[a]".parseable()))
     }
 
     @Test
     fun stopsIfNoMatchBetweenBookends() {
-        assertEquals(null, char('a').between(char('['), char(']'))("[b]"))
+        assertEquals(null, char('a').between(char('['), char(']'))("[b]".parseable()))
     }
 
     @Test
     fun stopsIfLeftNotMatching() {
-        assertEquals(null, char('a').between(char('['), char(']'))("(a]"))
+        assertEquals(null, char('a').between(char('['), char(']'))("(a]".parseable()))
     }
 
     @Test
     fun stopsIfRightNotMatching() {
-        assertEquals(null, char('a').between(char('['), char(']'))("[a)"))
+        assertEquals(null, char('a').between(char('['), char(']'))("[a)".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, char('a').between(char('['), char(']'))(""))
+        assertEquals(null, char('a').between(char('['), char(']'))("".parseable()))
     }
 }

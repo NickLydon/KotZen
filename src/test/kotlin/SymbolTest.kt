@@ -4,21 +4,21 @@ import kotlin.test.assertEquals
 class SymbolTest {
     @Test
     fun ifNotFoundReturnsNull() {
-        assertEquals(null, symbol("ab")("ac"))
+        assertEquals(null, symbol("ab")("ac".parseable()))
     }
 
     @Test
     fun returnsStringSymbol() {
-        assertEquals(Pair("d", "abc"), symbol("abc")("abcd"))
+        assertEquals(Pair("abcd".parseable(3), "abc"), symbol("abc")("abcd".parseable()))
     }
 
     @Test
     fun returnsStringSymbolAtEnd() {
-        assertEquals(Pair("", "abc"), symbol("abc")("abc"))
+        assertEquals(Pair("abc".parseable(3), "abc"), symbol("abc")("abc".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, symbol("a")(""))
+        assertEquals(null, symbol("a")("".parseable()))
     }
 }
