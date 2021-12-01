@@ -1,0 +1,121 @@
+typealias ParserOutput<T> = Pair<String, T>
+typealias Parser<T> = (String) -> ParserOutput<T>?
+
+fun <T> Parser<T>.parse(input: String): T {
+    val output = this(input) ?: error("Invalid input")
+
+    if (output.first != "") error("Unconsumed input: " + output.first)
+
+    return output.second
+}
+
+fun <S, T> Parser<S>.map(fn: (S) -> T): Parser<T> = { input: String ->
+    val output = this(input)
+    if (output == null) null
+    else Pair(output.first, fn(output.second))
+}
+
+val item = { input: String ->
+    if (input.isEmpty()) null
+    else Pair(input.substring(1), input[0])
+}
+
+fun Parser<Iterable<Char>>.text() = this.map { it.joinToString("") }
+
+fun sat(fn: (Char) -> Boolean) = { input: String ->
+    val output = item(input)
+    if (output == null || !fn(output.second)) null
+    else output
+}
+
+val isDigit = sat { c -> c.isDigit() }
+
+val number = isDigit.atLeastOne().map { xs -> xs.joinToString("").toInt() }
+
+val integer =
+    char('-').bind {
+        number.map { num -> -num }
+    }.or(number)
+
+val decimal =
+    integer.skipRight(char('.')).bind { i -> number.map { d -> "$i.$d".toDouble() } }
+        .or(integer.map { x -> x.toDouble() })
+
+val whitespace = sat { c -> c.isWhitespace() }
+
+fun <T> Parser<T>.token() =
+    whitespace.many().bind { this }.bind { output -> whitespace.many().map { output } }
+
+fun char(c: Char) = sat { c2 -> c == c2 }
+
+fun <T> Parser<T>.or(alternative: Parser<T>) = { input: String ->
+    this(input) ?: alternative(input)
+}
+
+fun <T> pure(default: T) = { input: String ->
+    Pair(input, default)
+}
+
+fun <T> Parser<T>.many(): Parser<Iterable<T>> =
+    this.bind { initial ->
+        this.many().map { xs -> listOf(initial) + xs }
+    }.or(pure(listOf()))
+
+fun <T> Parser<T>.atLeastOne() =
+    this.bind { initial ->
+        this.many().map { xs -> listOf(initial) + xs }
+    }
+
+fun <T, S> Parser<T>.bind(fn: (T) -> Parser<S>) = { input: String ->
+    val output = this(input)
+    if (output == null) null
+    else fn(output.second)(output.first)
+}
+
+fun <T, S> Parser<T>.delimitedBy(delimiter: Parser<S>) =
+    this.bind { initial ->
+        delimiter.skipLeft(this).many().map { xs -> listOf(initial) + xs }
+    }
+
+fun <T, S, U> Parser<T>.between(left: Parser<S>, right: Parser<U>) =
+    left.skipLeft(this.skipRight(right))
+
+fun <T, S> Parser<T>.skipLeft(next: Parser<S>) = this.bind { next }
+fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { x -> next.map { x } }
+
+fun symbol(value: String): Parser<String> =
+    char(value[0]).bind { c ->
+        if (value.length == 1) pure(c.toString())
+        else symbol(value.substring(1)).map { xs -> c + xs }
+    }
+
+fun <T> Parser<T>.peek() = { input: String ->
+    val output = this(input)
+    if (output == null) null
+    else Pair(input, Unit)
+}
+
+fun <S, T> Parser<S>.until(next: Parser<T>): Parser<Iterable<S>> =
+    next.peek().map { listOf<S>() }
+        .or(this.bind { x -> until(next).map { xs -> listOf(x) + xs } })
+
+fun <S, T> Parser<S>.except(next: Parser<T>): Parser<S> = { input: String ->
+    val output = next(input)
+    if (output != null) null
+    else this(input)
+}
+
+fun <T> defer(fn: () -> Parser<T>) = { input: String -> fn()(input) }
+
+sealed class Option<T> {
+    class None<T> : Option<T>()
+    data class Some<T>(val value: T) : Option<T>()
+
+    fun valueOrDefault(default: T) = if (this is Some<T>) value else default
+}
+
+fun <T> Parser<T>.optional() = { input: String ->
+    val output = this(input)
+    if (output == null) Pair(input, Option.None<T>())
+    else Pair(output.first, Option.Some(output.second))
+}
