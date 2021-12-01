@@ -20,21 +20,21 @@ class JsonParser {
             .token()
     private val numP = decimal.map { JsonToken.JsonNumber(it) }.token()
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
-    private fun arrayP() : Parser<JsonToken> = defer {
-        jsonTokenP().delimitedBy(char(',')).optional().between(char('['), char(']')).map {
-            JsonToken.JsonArray(it.valueOrDefault(listOf()))
-        }.token()
-    }
-    private fun objectP() = defer {
-        val keyValuePairs = stringP.skipRight(char(':').token())
+    private fun arrayP() : Parser<JsonToken> =
+        defer { jsonTokenP() }
+            .delimitedBy(char(','))
+            .optional()
+            .between(char('['), char(']'))
+            .map {JsonToken.JsonArray(it.valueOrDefault(listOf())) }
+            .token()
+    private fun objectP() =
+        stringP.skipRight(char(':').token())
             .bind { key -> jsonTokenP().map { value -> Pair(key.value, value) } }
             .delimitedBy(char(','))
-        keyValuePairs
             .optional()
             .between(char('{'), char('}'))
             .map { JsonToken.JsonObject(it.valueOrDefault(listOf())) }
             .token()
-    }
     private fun jsonTokenP() : Parser<JsonToken> =
         literalP
             .or(objectP())
