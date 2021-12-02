@@ -100,7 +100,8 @@ fun <T, S> Parser<T>.skipLeft(next: Parser<S>) = this.bind { next }
 fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { x -> next.map { x } }
 
 fun symbol(value: String): Parser<String> =
-    char(value[0]).bind { c ->
+    if (value.isEmpty()) error("Expected a non-empty symbol")
+    else char(value[0]).bind { c ->
         if (value.length == 1) pure(c.toString())
         else symbol(value.substring(1)).map { xs -> c + xs }
     }
@@ -108,7 +109,7 @@ fun symbol(value: String): Parser<String> =
 fun <T> Parser<T>.peek() = { input: Parseable ->
     val output = this(input)
     if (output == null) null
-    else Pair(input, Unit)
+    else Pair(input, output.second)
 }
 
 fun <S, T> Parser<S>.until(next: Parser<T>): Parser<Iterable<S>> =
