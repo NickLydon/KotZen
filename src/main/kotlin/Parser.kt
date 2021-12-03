@@ -44,9 +44,9 @@ fun sat(fn: (Char) -> Boolean) = { input: Parseable ->
     else output
 }
 
-val isDigit = sat { c -> c.isDigit() }
+val digit = sat { c -> c.isDigit() }
 
-val number = isDigit.atLeastOne().map { xs -> xs.joinToString("").toInt() }
+val number = digit.atLeastOne().map { xs -> xs.joinToString("").toInt() }
 
 val integer =
     char('-').bind {

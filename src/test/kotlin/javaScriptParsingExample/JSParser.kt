@@ -10,6 +10,7 @@ import decimal
 import defer
 import delimitedBy
 import except
+import digit
 import item
 import many
 import map
@@ -40,7 +41,7 @@ class JSParser {
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
     private val arrayP by lazy {
         jsTokenP()
-            .delimitedBy(char(','))
+            .delimitedBy(char(',').token())
             .optional()
             .between(char('['), char(']'))
             .map { JSToken.JSArray(it.valueOrDefault(listOf())) }
@@ -50,13 +51,13 @@ class JSParser {
     private val objectP by lazy {
         stringP.skipRight(char(':').token())
             .bind { key -> jsTokenP().map { value -> Pair(key.value, value) } }
-            .delimitedBy(char(','))
+            .delimitedBy(char(',').token())
             .optional()
-            .between(char('{'), char('}'))
+            .between(char('{').token(), char('}').token())
             .map { JSToken.JSObject(it.valueOrDefault(listOf())) }
             .token()
     }
-    private val identifierP = alpha.or(char('_')).bind { x -> alpha.or(char('_')).many().text().map { xs -> x + xs } }.token()
+    private val identifierP = alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
     private val lambdaP by lazy {
         val argList = identifierP.delimitedBy(char(',').token()).optional().map { it.valueOrDefault(listOf()) }
             .between(char('(').token(), char(')').token())
@@ -74,8 +75,8 @@ class JSParser {
             .between(char('(').token(), char(')').token())
     }
 
-    private val assignmentP = identifierP.skipRight(char('=')).bind {
-        left -> literalP.or(arrayP).or(objectP).token().map { right -> JSToken.JSAssignment(left, right) }
+    private val assignmentP = identifierP.skipRight(char('=').token()).bind {
+        left -> jsTokenP().token().map { right -> JSToken.JSAssignment(left, right) }
     }.token()
 
     private fun arithmeticP(): Parser<JSToken.Expr> =
@@ -94,6 +95,6 @@ class JSParser {
             .or(numP.token().map{ JSToken.Expr.Num(it.value) })
 
     private fun jsTokenP() : Parser<JSToken> =
-        objectP.or(arrayP).or(lambdaP).or(functionCallP).or(assignmentP).or(arithmeticP())
+        objectP.or(arrayP).or(lambdaP).or(functionCallP).or(assignmentP).or(arithmeticP()).or(literalP)
 }
 
