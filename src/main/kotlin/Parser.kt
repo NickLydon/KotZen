@@ -64,6 +64,8 @@ fun <T> Parser<T>.token() =
 
 fun char(c: Char) = sat { c2 -> c == c2 }
 
+val alpha = sat { c -> c.isLetter() }
+
 fun <T> Parser<T>.or(alternative: Parser<T>) = { input: Parseable ->
     this(input) ?: alternative(input)
 }
