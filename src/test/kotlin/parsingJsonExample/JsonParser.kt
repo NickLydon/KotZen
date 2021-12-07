@@ -31,22 +31,22 @@ class JsonParser {
             .token()
     private val numP = decimal.map { JsonToken.JsonNumber(it) }.token()
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
-    private fun arrayP() : Parser<JsonToken> =
+    private val arrayP =
         defer { jsonTokenP() }
             .delimitedBy(char(','))
             .optional()
             .between(char('['), char(']'))
             .map { JsonToken.JsonArray(it.valueOrDefault(listOf())) }
             .token()
-    private fun objectP() =
+    private val objectP =
         stringP.skipRight(char(':').token())
             .bind { key -> jsonTokenP().map { value -> Pair(key.value, value) } }
-            .delimitedBy(char(','))
+            .delimitedBy(char(',').token())
             .optional()
-            .between(char('{'), char('}'))
+            .between(char('{').token(), char('}').token())
             .map { JsonToken.JsonObject(it.valueOrDefault(listOf())) }
             .token()
-    private fun jsonTokenP() : Parser<JsonToken> = literalP.or(objectP()).or(arrayP())
+    private fun jsonTokenP() : Parser<JsonToken> = literalP.or(objectP).or(arrayP)
 
     fun parse(input: String) = jsonTokenP().parse(input)
 }
