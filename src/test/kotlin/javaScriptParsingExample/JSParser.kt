@@ -2,20 +2,21 @@ package javaScriptParsingExample
 
 import Parser
 import alpha
-import atLeastOne
 import between
 import bind
 import char
 import decimal
 import defer
 import delimitedBy
-import except
 import digit
+import except
 import item
 import many
 import map
 import optional
 import or
+import parse
+import pure
 import skipLeft
 import skipRight
 import symbol
@@ -24,7 +25,6 @@ import token
 import whitespace
 
 class JSParser {
-    private val newline = symbol("\r\n").or(symbol("\r"))
     private val nullP = symbol("null").map { JSToken.JSNull }.token()
     private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JSToken.JSBoolean(it) }.token()
     private val stringP =
@@ -39,62 +39,79 @@ class JSParser {
         .token()
     private val numP = decimal.map { JSToken.JSNumber(it) }.token()
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
-    private val arrayP by lazy {
-        jsTokenP()
+    private val identifierP = alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
+    private fun jsExpression() : Parser<JSToken> = arithmeticP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP)
+    private val assignmentP =
+        defer {
+            symbol("const").token().skipLeft(
+                identifierP.skipRight(char('=').token()).bind { left ->
+                    jsExpression().token().map { right -> JSToken.JSAssignment(left, right) }
+                })
+                .skipRight(char(';').token())
+        }
+
+    private val arrayP =
+        defer(::jsExpression)
             .delimitedBy(char(',').token())
             .optional()
             .between(char('['), char(']'))
             .map { JSToken.JSArray(it.valueOrDefault(listOf())) }
             .token()
-    }
 
-    private val objectP by lazy {
-        stringP.skipRight(char(':').token())
-            .bind { key -> jsTokenP().map { value -> Pair(key.value, value) } }
+    private val objectP =
+        identifierP.map { JSToken.JSString(it) }.or(stringP).skipRight(char(':').token())
+            .bind { key -> jsExpression().map { value -> Pair(key.value, value) } }
             .delimitedBy(char(',').token())
             .optional()
             .between(char('{').token(), char('}').token())
             .map { JSToken.JSObject(it.valueOrDefault(listOf())) }
             .token()
-    }
-    private val identifierP = alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
-    private val lambdaP by lazy {
-        val argList = identifierP.delimitedBy(char(',').token()).optional().map { it.valueOrDefault(listOf()) }
-            .between(char('(').token(), char(')').token())
-        val returnP = symbol("return").skipRight(whitespace.atLeastOne()).skipLeft(jsTokenP()).map { JSToken.JSReturn(it) }
-        val body = assignmentP.delimitedBy(newline).optional()
-            .bind { assignments ->
-                returnP.map { assignments.valueOrDefault(listOf()) + listOf(it) }
+
+    private val lambdaP =
+        defer {
+            val argList = identifierP.delimitedBy(char(',').token()).optional().map { it.valueOrDefault(listOf()) }
+                .between(char('(').token(), char(')').token())
+            val returnP = symbol("return").token().skipLeft(jsExpression()).map { JSToken.JSReturn(it) }.skipRight(char(';').token())
+            val body = jsTokenPs()
+                .bind { assignments ->
+                    returnP.map { assignments + it }
+                }.between(char('{').token(), char('}').token())
+            argList.skipRight(symbol("=>").token()).bind { args ->
+                body .map { JSToken.JSLambda(args, it) }
             }
-        argList.skipRight(symbol("=>").token()).bind { args ->
-            body.map { JSToken.JSLambda(args, it) }
-        }.between(char('{').token(), char('}').token())
-    }
+        }
+
     private val functionCallP = identifierP.bind { id ->
-        jsTokenP().delimitedBy(char(',').token()).map { JSToken.FunctionCall(id, it) }
+        jsExpression().delimitedBy(char(',').token()).map { JSToken.FunctionCall(id, it) }
             .between(char('(').token(), char(')').token())
     }
 
-    private val assignmentP = identifierP.skipRight(char('=').token()).bind {
-        left -> jsTokenP().token().map { right -> JSToken.JSAssignment(left, right) }
-    }.token()
+    private fun arithmeticP(): Parser<JSToken> {
+        val factor = defer(::arithmeticP).between(char('(').token(), char(')').token()).or(numP)
+        fun exp(): Parser<JSToken> =
+            factor.bind { f ->
+                char('^').map { JSToken.BinaryOperator.Exponent }.token().bind { operator ->
+                    exp().map { t -> JSToken.Expr.Binary(f, operator, t) }
+                }.or(pure(f))
+            }
+        fun term(): Parser<JSToken> =
+            exp().bind { f ->
+                char('*').map { JSToken.BinaryOperator.Mul }.or(
+                char('/').map { JSToken.BinaryOperator.Div }).token().bind { operator ->
+                    term().map { t -> JSToken.Expr.Binary(f, operator, t) }
+                }.or(pure(f))
+            }
+        fun expr(): Parser<JSToken> =
+            term().bind { f ->
+                char('+').map { JSToken.BinaryOperator.Add }.or(
+                char('-').map { JSToken.BinaryOperator.Sub }).token().bind { operator ->
+                    expr().map { t -> JSToken.Expr.Binary(f, operator, t) }
+                }.or(pure(f))
+            }
+        return expr()
+    }
 
-    private fun arithmeticP(): Parser<JSToken.Expr> =
-        defer { arithmeticP() }.between(char('(').token(), char(')').token())
-            .or(defer { arithmeticP() }.skipRight(char('^').token()).map { JSToken.Expr.Unary(it, JSToken.UnaryOperator.Exponent) })
-            .or(defer { arithmeticP() }.bind { left ->
-                char('*').token().map { JSToken.BinaryOperator.Mul }.or(
-                char('/').token().map { JSToken.BinaryOperator.Div })
-                .bind { operator -> arithmeticP().map { right -> JSToken.Expr.Binary(left, operator, right) } }
-            })
-            .or(defer { arithmeticP() }.bind { left ->
-                char('+').token().map { JSToken.BinaryOperator.Add }.or(
-                char('-').token().map { JSToken.BinaryOperator.Sub })
-                .bind { operator -> arithmeticP().map { right -> JSToken.Expr.Binary(left, operator, right) } }
-            })
-            .or(numP.token().map{ JSToken.Expr.Num(it.value) })
+    private fun jsTokenPs() = assignmentP.many().skipRight(whitespace.many())
 
-    private fun jsTokenP() : Parser<JSToken> =
-        objectP.or(arrayP).or(lambdaP).or(functionCallP).or(assignmentP).or(arithmeticP()).or(literalP)
+    fun parse(input: String) = jsTokenPs().parse(input)
 }
-
