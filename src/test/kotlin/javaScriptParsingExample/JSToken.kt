@@ -10,11 +10,9 @@ sealed class JSToken {
     data class JSLambda(val args: Iterable<String>, val body: Iterable<JSToken>) : JSToken()
     data class JSAssignment(val name: String, val expression: JSToken) : JSToken()
     data class JSReturn(val expression: JSToken) : JSToken()
-    enum class BinaryOperator { Add, Sub, Div, Mul, Exponent }
-    enum class UnaryOperator { Negation }
+    enum class BinaryOperator { Add, Sub, Div, Mul, Exponent, Eq, Ne, Lt, Lte, Gt, Gte }
     sealed class Expr : JSToken() {
         data class Binary(val left: JSToken, val operator: BinaryOperator, val right: JSToken) : Expr()
-        data class Unary(val expr: JSToken, val operator: UnaryOperator) : Expr()
     }
     data class VariableAccess(val namespace: Iterable<String>) : JSToken()
     data class FunctionCall(val namespace: Iterable<String>, val args: List<JSToken>) : JSToken()

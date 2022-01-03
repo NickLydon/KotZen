@@ -418,4 +418,118 @@ if (expr) {
             result)
     }
 
+    @Test
+    fun testEq() {
+        val result = JSParser().parse(
+            """
+const f = a == b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Eq,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testNe() {
+        val result = JSParser().parse(
+            """
+const f = a != b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Ne,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testGt() {
+        val result = JSParser().parse(
+            """
+const f = a > b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Gt,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testGte() {
+        val result = JSParser().parse(
+            """
+const f = a >= b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Gte,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testLt() {
+        val result = JSParser().parse(
+            """
+const f = a < b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Lt,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testLte() {
+        val result = JSParser().parse(
+            """
+const f = a <= b;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("a")),
+                        JSToken.BinaryOperator.Lte,
+                        JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
 }
