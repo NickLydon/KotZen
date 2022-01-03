@@ -26,7 +26,7 @@ import token
 import whitespace
 
 class JSParser {
-    private val reservedKeywords = listOf("null", "true", "false", "return")
+    private val reservedKeywords = listOf("null", "true", "false", "return", "if", "else")
         .map(::symbol)
         .fold(fail<String>()) { a, b -> a.or(b) }
     private val nullP = symbol("null").map { JSToken.JSNull }.token()
@@ -70,17 +70,15 @@ class JSParser {
             .map { JSToken.JSObject(it.valueOrDefault(listOf())) }
             .token()
 
+    private val returnP = defer(::jsExpression).map { JSToken.JSReturn(it) }.between(symbol("return").token(), char(';').token())
+
     private val lambdaP =
         defer {
             val argList = identifierP.delimitedBy(char(',').token()).optional().map { it.valueOrDefault(listOf()) }
                 .between(char('(').token(), char(')').token())
-            val returnP = symbol("return").token().skipLeft(jsExpression()).map { JSToken.JSReturn(it) }.skipRight(char(';').token())
-            val body = jsTokenPs()
-                .bind { assignments ->
-                    returnP.map { assignments + it }
-                }.between(char('{').token(), char('}').token())
+            val body = jsTokenPs().between(char('{').token(), char('}').token())
             argList.skipRight(symbol("=>").token()).bind { args ->
-                body .map { JSToken.JSLambda(args, it) }
+                body.map { JSToken.JSLambda(args, it) }
             }
         }
 
@@ -105,7 +103,22 @@ class JSParser {
         return expr
     }
 
-    private fun jsTokenPs() = assignmentP.many().skipRight(whitespace.many())
+    private fun ifStatementP(): Parser<JSToken> =
+        symbol("if").token().skipLeft(
+            jsExpression().between(char('(').token(), char(')').token()).bind { condition ->
+                jsTokenPs().between(char('{').token(), char('}').token()).map { body ->
+                    JSToken.IfStatement(condition, body)
+                }
+            }
+        ).bind { ifS ->
+            symbol("else").token().skipLeft(
+                jsTokenPs().between(char('{').token(), char('}').token()).map { body ->
+                    JSToken.IfElseStatement(ifS, body)
+                }
+            ).or(pure(ifS))
+        }
+
+    private fun jsTokenPs() = assignmentP.or(ifStatementP()).or(returnP).many().skipRight(whitespace.many())
 
     fun parse(input: String) = jsTokenPs().parse(input)
 }
