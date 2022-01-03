@@ -380,4 +380,42 @@ const f = x.y;
             result)
     }
 
+    @Test
+    fun testIfStatement() {
+        val result = JSParser().parse(
+            """
+if (expr) {
+    return 1;
+}
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.IfStatement(JSToken.VariableAccess(listOf("expr")), listOf(JSToken.JSReturn(JSToken.JSNumber(1.0))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testIfElseStatement() {
+        val result = JSParser().parse(
+            """
+if (expr) {
+    return 1;
+} else {
+    return 2;
+}
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.IfElseStatement(
+                    JSToken.IfStatement(
+                        JSToken.VariableAccess(listOf("expr")),
+                        listOf(JSToken.JSReturn(JSToken.JSNumber(1.0)))),
+                    listOf(JSToken.JSReturn(JSToken.JSNumber(2.0))))
+            ),
+            result)
+    }
+
 }
