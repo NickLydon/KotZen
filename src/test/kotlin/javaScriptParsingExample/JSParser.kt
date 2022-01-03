@@ -97,11 +97,21 @@ class JSParser {
                     binaryOpParser(lowerPriority, operators).map { t -> JSToken.Expr.Binary(f, operator, t) }
                 }.or(pure(f))
             }
+        fun unaryOpParser(operators: List<Parser<JSToken.UnaryOperator>>): Parser<JSToken> =
+            operators.map { it.token() }.fold(fail<JSToken.UnaryOperator>()) { a, b -> a.or(b) }.bind { operator ->
+                binaryExprP().map { JSToken.Expr.Unary(it, operator) }
+            }
 
         val parens = defer(::binaryExprP).between(parens)
-        val factor = parens.or(numP).or(functionCallP).or(variableAccessP)
+        val factor = parens.or(numP).or(boolP).or(functionCallP).or(variableAccessP)
+        val unary = unaryOpParser(
+            listOf(
+                char('!').map { JSToken.UnaryOperator.LogicalNegation },
+                char('-').map { JSToken.UnaryOperator.ArithmeticNegation },
+            )
+        )
         val exp = binaryOpParser(
-            factor,
+            unary.or(factor),
             listOf(
                 char('^').map { JSToken.BinaryOperator.Exponent },
                 symbol("==").map { JSToken.BinaryOperator.Eq },
