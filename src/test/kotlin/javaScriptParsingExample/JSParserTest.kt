@@ -184,7 +184,7 @@ const f = (x, y) => {
     fun testFunctionCall() {
         val result = JSParser().parse(
             """
-const f = g(1, true);
+const f = x.g(1, true);
             """
         )
         assertEquals(
@@ -192,7 +192,7 @@ const f = g(1, true);
                 JSToken.JSAssignment(
                     "f",
                     JSToken.FunctionCall(
-                        "g",
+                        listOf("x", "g"),
                         listOf(
                             JSToken.JSNumber(1.0),
                             JSToken.JSBoolean(true)
@@ -272,7 +272,7 @@ const f = 1 / 10;
     }
 
     @Test
-    fun testExp() {
+    fun testExponent() {
         val result = JSParser().parse(
             """
 const f = 2^3;
@@ -321,4 +321,23 @@ const f = 1 + (2 * 3) ^ 4 - 5;
             result
         )
     }
+
+
+    @Test
+    fun testVariableAccess() {
+        val result = JSParser().parse(
+            """
+const f = x.y;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.VariableAccess(listOf("x", "y"))
+                )
+            ),
+            result)
+    }
+
 }
