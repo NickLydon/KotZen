@@ -438,9 +438,11 @@ const f = x ^ y();
     fun testAssociativity() {
         val result = JSParser().parse(
             """
-const f = 1 + (2 * 3) ^ 4 - 5;
+const f = 1 + (2 * 3) ^ 4 - 5 - (-6);
             """
         )
+
+
         assertEquals(
             listOf(
                 JSToken.JSAssignment(
@@ -459,7 +461,11 @@ const f = 1 + (2 * 3) ^ 4 - 5;
                                 JSToken.JSNumber(4.0)
                             ),
                             JSToken.BinaryOperator.Sub,
-                            JSToken.JSNumber(5.0)
+                            JSToken.Expr.Binary(
+                                JSToken.JSNumber(5.0),
+                                JSToken.BinaryOperator.Sub,
+                                JSToken.Expr.Unary(JSToken.JSNumber(6.0), JSToken.UnaryOperator.ArithmeticNegation)
+                            )
                         )
                     )
                 )
@@ -467,7 +473,6 @@ const f = 1 + (2 * 3) ^ 4 - 5;
             result
         )
     }
-
 
     @Test
     fun testVariableAccess() {
@@ -634,6 +639,24 @@ const f = a <= b;
                         JSToken.VariableAccess(listOf("a")),
                         JSToken.BinaryOperator.Lte,
                         JSToken.VariableAccess(listOf("b"))))
+            ),
+            result)
+    }
+
+    @Test
+    fun testLogicalNegation() {
+        val result = JSParser().parse(
+            """
+const f = !true;
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Unary(
+                        JSToken.JSBoolean(true),
+                        JSToken.UnaryOperator.LogicalNegation))
             ),
             result)
     }
