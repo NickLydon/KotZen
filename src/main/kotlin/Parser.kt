@@ -97,6 +97,7 @@ fun <T, S> Parser<T>.delimitedBy(delimiter: Parser<S>) =
         delimiter.skipLeft(this).many().map { xs -> listOf(initial) + xs }
     }
 
+fun <T, S, U> Parser<T>.between(p: Pair<Parser<S>, Parser<U>>) = this.between(p.first, p.second)
 fun <T, S, U> Parser<T>.between(left: Parser<S>, right: Parser<U>) =
     left.skipLeft(this.skipRight(right))
 
