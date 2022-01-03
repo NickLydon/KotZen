@@ -14,7 +14,7 @@ class JSParserTest {
     const f = () => {
         return 1;
     };
-    const g = (f() + 10)^2 / 2 - (-10);
+    const g = (f() + 10)^2 / 2 - (10);
     const factorial = (n) => {
         if (n <= 1) {
             return 1;
@@ -27,7 +27,74 @@ class JSParserTest {
     @Test
     fun testFullExample() {
         val result = JSParser().parse(fullExample)
-        assertEquals(listOf(), result)
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment("a", JSToken.JSNumber(1.0)),
+                JSToken.JSAssignment("b", JSToken.JSString("hello")),
+                JSToken.JSAssignment("c", JSToken.JSBoolean(true)),
+                JSToken.JSAssignment(
+                    "d",
+                    JSToken.JSArray(listOf(JSToken.JSNumber(1.0), JSToken.JSBoolean(true), JSToken.JSString("hello")))),
+                JSToken.JSAssignment(
+                    "e",
+                    JSToken.JSObject(listOf(Pair("key", JSToken.JSString("value"))))),
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.JSLambda(listOf(), listOf(JSToken.JSReturn(JSToken.JSNumber(1.0))))),
+                JSToken.JSAssignment(
+                    "g",
+                    JSToken.Expr.Binary(
+                        JSToken.Expr.Binary(
+                            JSToken.Expr.Binary(
+                                JSToken.Expr.Binary(
+                                    JSToken.FunctionCall(listOf("f"), listOf()),
+                                    JSToken.BinaryOperator.Add,
+                                    JSToken.JSNumber(10.0)
+                                ),
+                            JSToken.BinaryOperator.Exponent,
+                            JSToken.JSNumber(2.0)),
+                        JSToken.BinaryOperator.Div,
+                        JSToken.JSNumber(2.0)),
+                    JSToken.BinaryOperator.Sub,
+                    JSToken.JSNumber(10.0))),
+                JSToken.JSAssignment(
+                    "factorial",
+                    JSToken.JSLambda(
+                        listOf("n"),
+                        listOf(
+                            JSToken.IfElseStatement(
+                                JSToken.IfStatement(
+                                    JSToken.Expr.Binary(
+                                        JSToken.VariableAccess(listOf("n")),
+                                        JSToken.BinaryOperator.Lte,
+                                        JSToken.JSNumber(1.0)
+                                    ),
+                                    listOf(JSToken.JSReturn(JSToken.JSNumber(1.0)))
+                                ),
+                                listOf(
+                                    JSToken.JSReturn(
+                                        JSToken.Expr.Binary(
+                                            JSToken.VariableAccess(listOf("n")),
+                                            JSToken.BinaryOperator.Mul,
+                                            JSToken.FunctionCall(
+                                                listOf("factorial"),
+                                                listOf(
+                                                    JSToken.Expr.Binary(
+                                                        JSToken.VariableAccess(listOf("n")),
+                                                        JSToken.BinaryOperator.Sub,
+                                                        JSToken.JSNumber(1.0)
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            result)
     }
 
     @Test
@@ -53,6 +120,24 @@ class JSParserTest {
                 JSToken.JSAssignment("a", JSToken.JSNumber(1.0)),
                 JSToken.JSAssignment("b", JSToken.JSNumber(2.0)),
                 JSToken.JSAssignment("c", JSToken.JSNumber(3.0)),
+            ),
+            result)
+    }
+
+    @Test
+    fun testArrayAssignmentSingle() {
+        val result = JSParser().parse(
+            """
+                const a = [1];
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "a",
+                    JSToken.JSArray(
+                        listOf(
+                            JSToken.JSNumber(1.0)))),
             ),
             result)
     }
@@ -174,6 +259,27 @@ const f = (x, y) => {
                     "f",
                     JSToken.JSLambda(
                         listOf("x", "y"),
+                        listOf(JSToken.JSReturn(JSToken.JSNumber(1.0))))
+                )
+            ),
+            result)
+    }
+
+    @Test
+    fun testLambdaWith1Arguments() {
+        val result = JSParser().parse(
+            """
+const f = (x) => {
+    return 1;
+};
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.JSLambda(
+                        listOf("x"),
                         listOf(JSToken.JSReturn(JSToken.JSNumber(1.0))))
                 )
             ),

@@ -49,7 +49,7 @@ class JSParser {
     private val identifierP =
         alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
             .except(reservedKeywords)
-    private fun jsExpression() : Parser<JSToken> = binaryExprP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP).or(variableAccessP)
+    private fun jsExpression() : Parser<JSToken> = lambdaP.or(binaryExprP()).or(literalP).or(arrayP).or(objectP).or(functionCallP).or(variableAccessP)
     private val assignmentP =
         identifierP.skipRight(char('=').token()).bind { left ->
             jsExpression().token().map { right -> JSToken.JSAssignment(left, right) }
