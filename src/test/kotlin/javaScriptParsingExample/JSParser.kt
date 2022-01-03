@@ -49,7 +49,7 @@ class JSParser {
     private val identifierP =
         alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
             .except(reservedKeywords)
-    private fun jsExpression() : Parser<JSToken> = arithmeticP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP).or(variableAccessP)
+    private fun jsExpression() : Parser<JSToken> = binaryExprP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP).or(variableAccessP)
     private val assignmentP =
         identifierP.skipRight(char('=').token()).bind { left ->
             jsExpression().token().map { right -> JSToken.JSAssignment(left, right) }
@@ -90,7 +90,7 @@ class JSParser {
             .between(parens)
     }
 
-    private fun arithmeticP(): Parser<JSToken> {
+    private fun binaryExprP(): Parser<JSToken> {
         fun binaryOpParser(lowerPriority: Parser<JSToken>, operators: List<Parser<JSToken.BinaryOperator>>): Parser<JSToken> =
             lowerPriority.bind { f ->
                 operators.map { it.token() }.fold(fail<JSToken.BinaryOperator>()) { a, b -> a.or(b) }.bind { operator ->
@@ -98,9 +98,20 @@ class JSParser {
                 }.or(pure(f))
             }
 
-        val parens = defer(::arithmeticP).between(parens)
+        val parens = defer(::binaryExprP).between(parens)
         val factor = parens.or(numP).or(functionCallP).or(variableAccessP)
-        val exp = binaryOpParser(factor, listOf(char('^').map { JSToken.BinaryOperator.Exponent }))
+        val exp = binaryOpParser(
+            factor,
+            listOf(
+                char('^').map { JSToken.BinaryOperator.Exponent },
+                symbol("==").map { JSToken.BinaryOperator.Eq },
+                symbol("!=").map { JSToken.BinaryOperator.Ne },
+                symbol(">=").map { JSToken.BinaryOperator.Gte },
+                symbol("<=").map { JSToken.BinaryOperator.Lte },
+                symbol(">").map { JSToken.BinaryOperator.Gt },
+                symbol("<").map { JSToken.BinaryOperator.Lt },
+            ),
+        )
         val term = binaryOpParser(exp, listOf(char('*').map { JSToken.BinaryOperator.Mul }, char('/').map { JSToken.BinaryOperator.Div }))
         val expr = binaryOpParser(term, listOf(char('+').map { JSToken.BinaryOperator.Add }, char('-').map { JSToken.BinaryOperator.Sub }))
         return expr
