@@ -16,6 +16,6 @@ sealed class JSToken {
         data class Binary(val left: JSToken, val operator: BinaryOperator, val right: JSToken) : Expr()
         data class Unary(val expr: JSToken, val operator: UnaryOperator) : Expr()
     }
-    data class VariableAccess(val value: String) : JSToken()
-    data class FunctionCall(val identifier: String, val args: List<JSToken>) : JSToken()
+    data class VariableAccess(val namespace: List<String>) : JSToken()
+    data class FunctionCall(val namespace: List<String>, val args: List<JSToken>) : JSToken()
 }

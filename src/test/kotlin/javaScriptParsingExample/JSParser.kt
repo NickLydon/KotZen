@@ -41,12 +41,13 @@ class JSParser {
     private val numP = decimal.map { JSToken.JSNumber(it) }.token()
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
     private val identifierP = alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
-    private fun jsExpression() : Parser<JSToken> = arithmeticP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP)
+    private fun jsExpression() : Parser<JSToken> = arithmeticP().or(literalP).or(arrayP).or(objectP).or(lambdaP).or(functionCallP).or(variableAccessP)
     private val assignmentP =
         identifierP.skipRight(char('=').token()).bind { left ->
             jsExpression().token().map { right -> JSToken.JSAssignment(left, right) }
         }.between(symbol("const").token(), char(';').token())
 
+    private val variableAccessP = identifierP.delimitedBy(char('.')).map { JSToken.VariableAccess(it) }
     private val arrayP =
         defer(::jsExpression)
             .delimitedBy(char(',').token())
@@ -78,8 +79,8 @@ class JSParser {
             }
         }
 
-    private val functionCallP = identifierP.bind { id ->
-        jsExpression().delimitedBy(char(',').token()).map { JSToken.FunctionCall(id, it) }
+    private val functionCallP = variableAccessP.bind { id ->
+        jsExpression().delimitedBy(char(',').token()).map { JSToken.FunctionCall(id.namespace, it) }
             .between(char('(').token(), char(')').token())
     }
 
