@@ -26,6 +26,9 @@ import token
 import whitespace
 
 class JSParser {
+    private val parens = Pair(char('(').token(), char(')').token())
+    private val braces = Pair(char('{').token(), char('}').token())
+    private val brackets = Pair(char('[').token(), char(']').token())
     private val reservedKeywords = listOf("null", "true", "false", "return", "if", "else")
         .map(::symbol)
         .fold(fail<String>()) { a, b -> a.or(b) }
@@ -57,7 +60,7 @@ class JSParser {
         defer(::jsExpression)
             .delimitedBy(char(',').token())
             .optional()
-            .between(char('['), char(']'))
+            .between(brackets)
             .map { JSToken.JSArray(it.valueOrDefault(listOf())) }
             .token()
 
@@ -66,7 +69,7 @@ class JSParser {
             .bind { key -> jsExpression().map { value -> Pair(key.value, value) } }
             .delimitedBy(char(',').token())
             .optional()
-            .between(char('{').token(), char('}').token())
+            .between(braces)
             .map { JSToken.JSObject(it.valueOrDefault(listOf())) }
             .token()
 
@@ -75,8 +78,8 @@ class JSParser {
     private val lambdaP =
         defer {
             val argList = identifierP.delimitedBy(char(',').token()).optional().map { it.valueOrDefault(listOf()) }
-                .between(char('(').token(), char(')').token())
-            val body = jsTokenPs().between(char('{').token(), char('}').token())
+                .between(parens)
+            val body = jsTokenPs().between(braces)
             argList.skipRight(symbol("=>").token()).bind { args ->
                 body.map { JSToken.JSLambda(args, it) }
             }
@@ -84,7 +87,7 @@ class JSParser {
 
     private val functionCallP = variableAccessP.bind { id ->
         jsExpression().delimitedBy(char(',').token()).optional().map { JSToken.FunctionCall(id.namespace, it.valueOrDefault(listOf())) }
-            .between(char('(').token(), char(')').token())
+            .between(parens)
     }
 
     private fun arithmeticP(): Parser<JSToken> {
@@ -95,7 +98,7 @@ class JSParser {
                 }.or(pure(f))
             }
 
-        val parens = defer(::arithmeticP).between(char('(').token(), char(')').token())
+        val parens = defer(::arithmeticP).between(parens)
         val factor = parens.or(numP).or(functionCallP).or(variableAccessP)
         val exp = binaryOpParser(factor, listOf(char('^').map { JSToken.BinaryOperator.Exponent }))
         val term = binaryOpParser(exp, listOf(char('*').map { JSToken.BinaryOperator.Mul }, char('/').map { JSToken.BinaryOperator.Div }))
@@ -105,14 +108,14 @@ class JSParser {
 
     private fun ifStatementP(): Parser<JSToken> =
         symbol("if").token().skipLeft(
-            jsExpression().between(char('(').token(), char(')').token()).bind { condition ->
-                jsTokenPs().between(char('{').token(), char('}').token()).map { body ->
+            jsExpression().between(parens).bind { condition ->
+                jsTokenPs().between(braces).map { body ->
                     JSToken.IfStatement(condition, body)
                 }
             }
         ).bind { ifS ->
             symbol("else").token().skipLeft(
-                jsTokenPs().between(char('{').token(), char('}').token()).map { body ->
+                jsTokenPs().between(braces).map { body ->
                     JSToken.IfElseStatement(ifS, body)
                 }
             ).or(pure(ifS))
