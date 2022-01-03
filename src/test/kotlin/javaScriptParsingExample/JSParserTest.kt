@@ -204,6 +204,26 @@ const f = x.g(1, true);
     }
 
     @Test
+    fun testFunctionCallWithoutArgs() {
+        val result = JSParser().parse(
+            """
+const f = x.g();
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.FunctionCall(
+                        listOf("x", "g"),
+                        listOf()
+                    )
+                )
+            ),
+            result)
+    }
+
+    @Test
     fun testAdd() {
         val result = JSParser().parse(
             """
@@ -283,6 +303,26 @@ const f = 2^3;
                 JSToken.JSAssignment(
                     "f",
                     JSToken.Expr.Binary(JSToken.JSNumber(2.0), JSToken.BinaryOperator.Exponent, JSToken.JSNumber(3.0))
+                )
+            ),
+            result)
+    }
+
+    @Test
+    fun testArithmeticWithVariables() {
+        val result = JSParser().parse(
+            """
+const f = x ^ y();
+            """
+        )
+        assertEquals(
+            listOf(
+                JSToken.JSAssignment(
+                    "f",
+                    JSToken.Expr.Binary(
+                        JSToken.VariableAccess(listOf("x")),
+                        JSToken.BinaryOperator.Exponent,
+                        JSToken.FunctionCall(listOf("y"), listOf()))
                 )
             ),
             result)
