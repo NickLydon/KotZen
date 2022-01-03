@@ -10,6 +10,7 @@ import defer
 import delimitedBy
 import digit
 import except
+import fail
 import item
 import many
 import map
@@ -87,28 +88,17 @@ class JSParser {
     }
 
     private fun arithmeticP(): Parser<JSToken> {
+        fun binaryOpParser(lowerPriority: Parser<JSToken>, operators: List<Parser<JSToken.BinaryOperator>>): Parser<JSToken> =
+            lowerPriority.bind { f ->
+                operators.map { it.token() }.fold(fail<JSToken.BinaryOperator>()) { a, b -> a.or(b) }.bind { operator ->
+                    binaryOpParser(lowerPriority, operators).map { t -> JSToken.Expr.Binary(f, operator, t) }
+                }.or(pure(f))
+            }
         val factor = defer(::arithmeticP).between(char('(').token(), char(')').token()).or(numP)
-        fun exp(): Parser<JSToken> =
-            factor.bind { f ->
-                char('^').map { JSToken.BinaryOperator.Exponent }.token().bind { operator ->
-                    exp().map { t -> JSToken.Expr.Binary(f, operator, t) }
-                }.or(pure(f))
-            }
-        fun term(): Parser<JSToken> =
-            exp().bind { f ->
-                char('*').map { JSToken.BinaryOperator.Mul }.or(
-                char('/').map { JSToken.BinaryOperator.Div }).token().bind { operator ->
-                    term().map { t -> JSToken.Expr.Binary(f, operator, t) }
-                }.or(pure(f))
-            }
-        fun expr(): Parser<JSToken> =
-            term().bind { f ->
-                char('+').map { JSToken.BinaryOperator.Add }.or(
-                char('-').map { JSToken.BinaryOperator.Sub }).token().bind { operator ->
-                    expr().map { t -> JSToken.Expr.Binary(f, operator, t) }
-                }.or(pure(f))
-            }
-        return expr()
+        val exp = binaryOpParser(factor, listOf(char('^').map { JSToken.BinaryOperator.Exponent }))
+        val term = binaryOpParser(exp, listOf(char('*').map { JSToken.BinaryOperator.Mul }, char('/').map { JSToken.BinaryOperator.Div }))
+        val expr = binaryOpParser(term, listOf(char('+').map { JSToken.BinaryOperator.Add }, char('-').map { JSToken.BinaryOperator.Sub }))
+        return expr
     }
 
     private fun jsTokenPs() = assignmentP.many().skipRight(whitespace.many())

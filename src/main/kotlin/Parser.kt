@@ -74,6 +74,8 @@ fun <T> pure(default: T) = { input: Parseable ->
     Pair(input, default)
 }
 
+fun <T> fail(): Parser<T> = { null }
+
 fun <T> Parser<T>.many(): Parser<Iterable<T>> =
     this.bind { initial ->
         this.many().map { xs -> listOf(initial) + xs }
