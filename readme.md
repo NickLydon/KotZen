@@ -4,7 +4,7 @@
 
 Inspired by [Sprache](https://github.com/sprache/Sprache) and reading Graham Hutton's [Programming in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pih.html).
 
-Here's an example of a json parser:
+Here's an example of a [json parser](https://github.com/NickLydon/KotZen/blob/main/src/test/kotlin/parsingJsonExample/JsonParser.kt):
 ```kotlin
 package parsingJsonExample
 
