@@ -10,7 +10,7 @@ import defer
 import delimitedBy
 import digit
 import except
-import fail
+import first
 import item
 import many
 import map
@@ -31,25 +31,25 @@ class JSParser {
     private val brackets = Pair(char('[').token(), char(']').token())
     private val reservedKeywords = listOf("null", "true", "false", "return", "if", "else")
         .map(::symbol)
-        .fold(fail<String>()) { a, b -> a.or(b) }
+        .first()
     private val nullP = symbol("null").map { JSToken.JSNull }.token()
     private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JSToken.JSBoolean(it) }.token()
     private val stringP =
         char('\\').bind { item.map { c -> c } }.or(item.except(char('"'))).many()
-            .between(char('"'), char('"'))
+            .between(char('"'))
         .or(
         char('\\').bind { item.map { c -> c } }.or(item.except(char('\''))).many()
-            .between(char('\''), char('\''))
+            .between(char('\''))
         )
         .text()
         .map { JSToken.JSString(it) }
         .token()
     private val numP = decimal.map { JSToken.JSNumber(it) }.token()
-    private val literalP = nullP.or(boolP).or(stringP).or(numP)
+    private val literalP = listOf(nullP, boolP, stringP, numP).first()
     private val identifierP =
         alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
             .except(reservedKeywords)
-    private fun jsExpression() : Parser<JSToken> = lambdaP.or(binaryExprP()).or(literalP).or(arrayP).or(objectP).or(functionCallP).or(variableAccessP)
+    private fun jsExpression() : Parser<JSToken> = listOf(lambdaP, unaryOrBinaryP(), literalP, arrayP, objectP, functionCallP, variableAccessP).first()
     private val assignmentP =
         identifierP.skipRight(char('=').token()).bind { left ->
             jsExpression().token().map { right -> JSToken.JSAssignment(left, right) }
@@ -90,20 +90,20 @@ class JSParser {
             .between(parens)
     }
 
-    private fun binaryExprP(): Parser<JSToken> {
+    private fun unaryOrBinaryP(): Parser<JSToken> {
         fun binaryOpParser(lowerPriority: Parser<JSToken>, operators: List<Parser<JSToken.BinaryOperator>>): Parser<JSToken> =
             lowerPriority.bind { f ->
-                operators.map { it.token() }.fold(fail<JSToken.BinaryOperator>()) { a, b -> a.or(b) }.bind { operator ->
+                operators.map { it.token() }.first().bind { operator ->
                     binaryOpParser(lowerPriority, operators).map { t -> JSToken.Expr.Binary(f, operator, t) }
                 }.or(pure(f))
             }
         fun unaryOpParser(operators: List<Parser<JSToken.UnaryOperator>>): Parser<JSToken> =
-            operators.map { it.token() }.fold(fail<JSToken.UnaryOperator>()) { a, b -> a.or(b) }.bind { operator ->
-                binaryExprP().map { JSToken.Expr.Unary(it, operator) }
+            operators.map { it.token() }.first().bind { operator ->
+                unaryOrBinaryP().map { JSToken.Expr.Unary(it, operator) }
             }
 
-        val parens = defer(::binaryExprP).between(parens)
-        val factor = parens.or(numP).or(boolP).or(functionCallP).or(variableAccessP)
+        val parens = defer(::unaryOrBinaryP).between(parens)
+        val factor = listOf(parens, numP, boolP, functionCallP, variableAccessP).first()
         val unary = unaryOpParser(
             listOf(
                 char('!').map { JSToken.UnaryOperator.LogicalNegation },

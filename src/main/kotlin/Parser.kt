@@ -70,6 +70,8 @@ fun <T> Parser<T>.or(alternative: Parser<T>) = { input: Parseable ->
     this(input) ?: alternative(input)
 }
 
+fun <T> Iterable<Parser<T>>.first() = this.fold(fail<T>()) { a, b -> a.or(b) }
+
 fun <T> pure(default: T) = { input: Parseable ->
     Pair(input, default)
 }
@@ -98,6 +100,7 @@ fun <T, S> Parser<T>.delimitedBy(delimiter: Parser<S>) =
     }
 
 fun <T, S, U> Parser<T>.between(p: Pair<Parser<S>, Parser<U>>) = this.between(p.first, p.second)
+fun <T, S> Parser<T>.between(p: Parser<S>) = this.between(p, p)
 fun <T, S, U> Parser<T>.between(left: Parser<S>, right: Parser<U>) =
     left.skipLeft(this.skipRight(right))
 
