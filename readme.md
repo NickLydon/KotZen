@@ -62,4 +62,4 @@ class JsonParser {
 ```
 There's also a parser for a language which is almost a [subset of javascript](https://github.com/NickLydon/KotZen/blob/main/src/test/kotlin/javaScriptParsingExample/JSParser.kt).
 
-[Docs](https://61d89deee432d72c571fd0c3--kotzen.netlify.app/index.html)
+[Docs](https://kotzen.netlify.app/)
