@@ -3,6 +3,11 @@ import kotlin.test.assertEquals
 
 class AtLeastOneTest {
     @Test
+    fun testCIBuild() {
+        assertEquals(true, false, "whoops!")
+    }
+
+    @Test
     fun ifNotFoundReturnsNull() {
         assertEquals(null, sat { x -> x == 'a' }.atLeastOne()("b".parseable()))
     }
