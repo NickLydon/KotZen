@@ -25,10 +25,10 @@ tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-tasks.register("runOnGitHub") {
-    dependsOn("test", "dokkaHtml")
+tasks.register("ci-build") {
+    dependsOn("test")
     group = "custom"      // 3
-    description = "$ ./gradlew runOnGitHub # runs on GitHub Action"
+    description = "$ ./gradlew ci-build # runs on GitHub Action"
 }
 
 application {
