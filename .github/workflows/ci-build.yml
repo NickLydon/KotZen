@@ -1,7 +1,7 @@
-# .github/workflows/runOnGitHub.yml
+# .github/workflows/ci-buildci-build.yml
 # GitHub Actions documentation
 # => https://docs.github.com/en/actions
-name: runOnGitHub
+name: ci-build
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -23,7 +23,7 @@ jobs:
       # => https://github.com/marketplace/actions/gradle-command
       - uses: eskatos/gradle-command-action@v1
         with:
-          arguments: runOnGitHub
+          arguments: ci-build
           distributions-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
@@ -33,8 +33,3 @@ jobs:
         if: always()
         with:
           files: build/test-results/**/*.xml
-      - name: Upload docs
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs
-          path: build/dokka/html
