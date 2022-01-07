@@ -71,3 +71,5 @@ outTmp/
 /test.output
 /kotlin-native/dist
 kotlin-ide/
+# Local Netlify folder
+.netlify
