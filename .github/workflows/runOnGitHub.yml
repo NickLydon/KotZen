@@ -27,3 +27,14 @@ jobs:
           distributions-cache-enabled: true
           dependencies-cache-enabled: true
           configuration-cache-enabled: true
+
+      - name: Upload tests
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: build/reports/tests/test
+      - name: Upload docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: build/dokka/html
