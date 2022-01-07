@@ -18,6 +18,6 @@ sealed class JSToken {
     }
     data class VariableAccess(val namespace: Iterable<String>) : JSToken()
     data class FunctionCall(val namespace: Iterable<String>, val args: List<JSToken>) : JSToken()
-    data class IfStatement(open val condition: JSToken, open val body: Iterable<JSToken>) : JSToken()
+    data class IfStatement(val condition: JSToken, val body: Iterable<JSToken>) : JSToken()
     data class IfElseStatement(val ifStatement: IfStatement, val elseBody: Iterable<JSToken>) : JSToken()
 }
