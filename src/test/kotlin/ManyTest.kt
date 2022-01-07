@@ -19,7 +19,7 @@ class ManyTest {
 
     @Test
     fun emptyReturnsEmpty() {
-        assertEquals(Pair("".parseable(), listOf()), item.many()("".parseable()))
+        assertEquals(Pair("".parseable(), listOf()), char.many()("".parseable()))
     }
 }
 

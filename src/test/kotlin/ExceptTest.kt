@@ -4,12 +4,12 @@ import kotlin.test.assertEquals
 class ExceptTest {
     @Test
     fun consumesUntilOtherParser() {
-        assertEquals(Pair("a".parseable(1), 'a'), item.except(char('b'))("a".parseable()))
+        assertEquals(Pair("a".parseable(1), 'a'), char.except(char('b'))("a".parseable()))
     }
 
     @Test
     fun consumesUntilOtherParser2() {
-        assertEquals(null, item.except(char('b'))("b".parseable()))
+        assertEquals(null, char.except(char('b'))("b".parseable()))
     }
 
     @Test

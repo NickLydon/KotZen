@@ -14,7 +14,7 @@ class OrTest {
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item.or(item)("".parseable()))
+        assertEquals(null, char.or(char)("".parseable()))
     }
 }
 

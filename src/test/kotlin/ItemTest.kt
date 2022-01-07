@@ -4,17 +4,17 @@ import kotlin.test.assertEquals
 class ItemTest {
     @Test
     fun singleCharTest() {
-        assertEquals(Pair("a".parseable(1), 'a'), item("a".parseable()))
+        assertEquals(Pair("a".parseable(1), 'a'), char("a".parseable()))
     }
 
     @Test
     fun doubleCharTest() {
-        assertEquals(Pair("ab".parseable(1), 'a'), item("ab".parseable()))
+        assertEquals(Pair("ab".parseable(1), 'a'), char("ab".parseable()))
     }
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item("".parseable()))
+        assertEquals(null, char("".parseable()))
     }
 }
 

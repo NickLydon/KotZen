@@ -11,7 +11,6 @@ import delimitedBy
 import digit
 import except
 import first
-import item
 import many
 import map
 import optional
@@ -35,10 +34,10 @@ class JSParser {
     private val nullP = symbol("null").map { JSToken.JSNull }.token()
     private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JSToken.JSBoolean(it) }.token()
     private val stringP =
-        char('\\').bind { item.map { c -> c } }.or(item.except(char('"'))).many()
+        char('\\').bind { char.map { c -> c } }.or(char.except(char('"'))).many()
             .between(char('"'))
         .or(
-        char('\\').bind { item.map { c -> c } }.or(item.except(char('\''))).many()
+        char('\\').bind { char.map { c -> c } }.or(char.except(char('\''))).many()
             .between(char('\''))
         )
         .text()

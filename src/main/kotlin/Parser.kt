@@ -31,18 +31,22 @@ fun <S, T> Parser<S>.map(fn: (S) -> T): Parser<T> = { input: Parseable ->
     else Pair(output.first, fn(output.second))
 }
 
-val item = { input: Parseable ->
-    if (input.isEmpty()) null
-    else Pair(input.advance(1), input.head())
-}
 
 fun Parser<Iterable<Char>>.text() = this.map { it.joinToString("") }
 
 fun sat(fn: (Char) -> Boolean) = { input: Parseable ->
-    val output = item(input)
-    if (output == null || !fn(output.second)) null
-    else output
+    if (input.isEmpty() || !fn(input.head())) null
+    else Pair(input.advance(1), input.head())
 }
+
+fun <T> pure(default: T) = { input: Parseable ->
+    Pair(input, default)
+}
+
+fun <T> fail(): Parser<T> = { null }
+
+val char = sat { true }
+fun char(c: Char) = sat { c2 -> c == c2 }
 
 val digit = sat { c -> c.isDigit() }
 
@@ -62,8 +66,6 @@ val whitespace = sat { c -> c.isWhitespace() }
 fun <T> Parser<T>.token() =
     whitespace.many().bind { this }.bind { output -> whitespace.many().map { output } }
 
-fun char(c: Char) = sat { c2 -> c == c2 }
-
 val alpha = sat { c -> c.isLetter() }
 
 fun <T> Parser<T>.or(alternative: Parser<T>) = { input: Parseable ->
@@ -71,12 +73,6 @@ fun <T> Parser<T>.or(alternative: Parser<T>) = { input: Parseable ->
 }
 
 fun <T> Iterable<Parser<T>>.first() = this.fold(fail<T>()) { a, b -> a.or(b) }
-
-fun <T> pure(default: T) = { input: Parseable ->
-    Pair(input, default)
-}
-
-fun <T> fail(): Parser<T> = { null }
 
 fun <T> Parser<T>.many(): Parser<Iterable<T>> =
     this.bind { initial ->

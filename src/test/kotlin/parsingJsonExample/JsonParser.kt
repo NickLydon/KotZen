@@ -9,7 +9,6 @@ import decimal
 import defer
 import delimitedBy
 import except
-import item
 import many
 import map
 import optional
@@ -24,15 +23,15 @@ class JsonParser {
     private val nullP = symbol("null").map { JsonToken.JsonNull }.token()
     private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JsonToken.JsonBool(it) }.token()
     private val stringP =
-        char('\\').bind { item.map { c -> c } }.or(item.except(char('"'))).many()
-            .between(char('"'), char('"'))
+        char('\\').bind { char }.or(char.except(char('"'))).many()
+            .between(char('"'))
             .text()
             .map { JsonToken.JsonString(it) }
             .token()
     private val numP = decimal.map { JsonToken.JsonNumber(it) }.token()
     private val literalP = nullP.or(boolP).or(stringP).or(numP)
     private val arrayP =
-        defer { jsonTokenP() }
+        defer(::jsonTokenP)
             .delimitedBy(char(','))
             .optional()
             .between(char('['), char(']'))

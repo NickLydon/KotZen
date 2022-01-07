@@ -9,6 +9,6 @@ class TextTest {
 
     @Test
     fun emptyReturnsEmpty() {
-        assertEquals(Pair("".parseable(), ""), item.many().text()("".parseable()))
+        assertEquals(Pair("".parseable(), ""), char.many().text()("".parseable()))
     }
 }

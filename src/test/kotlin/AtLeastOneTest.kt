@@ -19,7 +19,7 @@ class AtLeastOneTest {
 
     @Test
     fun emptyReturnsNull() {
-        assertEquals(null, item.atLeastOne()("".parseable()))
+        assertEquals(null, char.atLeastOne()("".parseable()))
     }
 }
 
