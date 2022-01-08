@@ -34,10 +34,10 @@ class JSParser {
     private val nullP = symbol("null").map { JSToken.JSNull }.token()
     private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JSToken.JSBoolean(it) }.token()
     private val stringP =
-        char('\\').bind { char.map { c -> c } }.or(char.except(char('"'))).many()
+        char('\\').bind { char }.or(char.except(char('"'))).many()
             .between(char('"'))
         .or(
-        char('\\').bind { char.map { c -> c } }.or(char.except(char('\''))).many()
+        char('\\').bind { char }.or(char.except(char('\''))).many()
             .between(char('\''))
         )
         .text()
@@ -46,7 +46,7 @@ class JSParser {
     private val numP = decimal.map { JSToken.JSNumber(it) }.token()
     private val literalP = listOf(nullP, boolP, stringP, numP).first()
     private val identifierP =
-        alpha.or(char('_')).bind { x -> alpha.or(char('_')).or(digit).many().text().map { xs -> x + xs } }.token()
+        alpha.or(char('_')).bind { alpha.or(char('_')).or(digit).many().text().map { xs -> it + xs } }.token()
             .except(reservedKeywords)
     private fun jsExpression() : Parser<JSToken> = listOf(lambdaP, unaryOrBinaryP(), literalP, arrayP, objectP, functionCallP, variableAccessP).first()
     private val assignmentP =

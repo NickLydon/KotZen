@@ -1,12 +1,3 @@
-/**
- * A parser returns the remaining unparsed input and the typed result of parsing the input
- */
-typealias ParserOutput<T> = Pair<Parseable, T>
-
-/**
-* A parser takes an input, which is parseable, and returns a typed output
- */
-typealias Parser<T> = (Parseable) -> ParserOutput<T>?
 
 /**
  * Input to the parser
@@ -38,6 +29,16 @@ interface Parseable {
      */
     fun unparsed() : String
 }
+
+/**
+ * A parser returns the remaining unparsed input and the typed result of parsing the input
+ */
+typealias ParserOutput<T> = Pair<Parseable, T>
+
+/**
+* A parser takes an input, which is parseable, and returns a typed output
+ */
+typealias Parser<T> = (Parseable) -> ParserOutput<T>?
 
 /**
  * Wraps a string with a pointer to the head of the remaining unparsed input
@@ -91,6 +92,12 @@ fun <S, T> Parser<S>.map(fn: (S) -> T): Parser<T> = { input: Parseable ->
 }
 
 /**
+ * Maps a parser output to a new value
+ * @param value The new value to return
+ */
+fun <S, T> Parser<S>.mapTo(value: T): Parser<T> = this.map { value }
+
+/**
  * Returns a parser that always succeeds.
  * The result is the unconsumed input and the value passed to this function
  */
@@ -111,7 +118,7 @@ val char = sat { true }
 /**
  * A parser that consumes the given character
  */
-fun char(c: Char) = sat { c2 -> c == c2 }
+fun char(c: Char) = sat { it == c }
 
 /**
  * Returns a parser that joins a parsed collection of characters to a string
@@ -121,19 +128,19 @@ fun Parser<Iterable<Char>>.text() = this.map { it.joinToString("") }
 /**
  * A parser that consumes a digit
  */
-val digit = sat { c -> c.isDigit() }
+val digit = sat { it.isDigit() }
 
 /**
  * A parser that consumes at least one digit to create a number
  */
-val number = digit.atLeastOne().map { xs -> xs.joinToString("").toInt() }
+val number = digit.atLeastOne().map { it.joinToString("").toInt() }
 
 /**
  * A parser that consumes a positive or negative whole number
  */
 val integer =
     char('-').bind {
-        number.map { num -> -num }
+        number.map(Math::negateExact)
     }.or(number)
 
 /**
@@ -141,12 +148,12 @@ val integer =
  */
 val decimal =
     integer.skipRight(char('.')).bind { i -> number.map { d -> "$i.$d".toDouble() } }
-        .or(integer.map { x -> x.toDouble() })
+        .or(integer.map { it.toDouble() })
 
 /**
  * A parser that consumes a whitespace character according to the unicode standard
  */
-val whitespace = sat { c -> c.isWhitespace() }
+val whitespace = sat(Char::isWhitespace)
 
 /**
  * Consumes the whitespace around a given parser
@@ -156,7 +163,7 @@ fun <T> Parser<T>.token() = this.between(whitespace.many())
 /**
  * A parser that consumes a letter
  */
-val alpha = sat { c -> c.isLetter() }
+val alpha = sat(Char::isLetter)
 
 /**
  * Returns a parser that returns the first successful result
@@ -176,17 +183,13 @@ fun <T> Iterable<Parser<T>>.first() = this.fold(fail<T>()) { a, b -> a.or(b) }
  * Returns a parser that consumes 0 or more
  */
 fun <T> Parser<T>.many(): Parser<Iterable<T>> =
-    this.bind { initial ->
-        this.many().map { xs -> listOf(initial) + xs }
-    }.or(pure(listOf()))
+    this.atLeastOne().or(pure(listOf()))
 
 /**
  * Returns a parser that consumes 1 or more
  */
 fun <T> Parser<T>.atLeastOne() =
-    this.bind { initial ->
-        this.many().map { xs -> listOf(initial) + xs }
-    }
+    this.bind { this.many().map { xs -> listOf(it) + xs } }
 
 /**
  * Flattens multiple parsers (called flatMap elsewhere)
@@ -203,9 +206,7 @@ fun <T, S> Parser<T>.bind(fn: (T) -> Parser<S>) = { input: Parseable ->
  * @param delimiter The parser for the delimiter, e.g. char(',') for a CSV file
  */
 fun <T, S> Parser<T>.delimitedBy(delimiter: Parser<S>) =
-    this.bind { initial ->
-        delimiter.skipLeft(this).many().map { xs -> listOf(initial) + xs }
-    }
+    this.bind { delimiter.skipLeft(this).many().map { xs -> listOf(it) + xs } }
 
 /**
  * Returns a parser for input surrounded by a pair of parsers
@@ -237,7 +238,7 @@ fun <T, S> Parser<T>.skipLeft(next: Parser<S>) = this.bind { next }
  * Returns a parser that uses this parser's output, ignoring the successful result of the next
  * @param next The parser whose result will be ignored
  */
-fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { x -> next.map { x } }
+fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { next.mapTo(it) }
 
 /**
  * Returns a parser that consumes a given string
@@ -246,9 +247,9 @@ fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { x -> next.map { x 
  */
 fun symbol(value: String): Parser<String> =
     if (value.isEmpty()) error("Expected a non-empty symbol")
-    else char(value[0]).bind { c ->
-        if (value.length == 1) pure(c.toString())
-        else symbol(value.substring(1)).map { xs -> c + xs }
+    else char(value[0]).bind {
+        if (value.length == 1) pure(it.toString())
+        else symbol(value.substring(1)).map { xs -> it + xs }
     }
 
 /**
@@ -265,8 +266,8 @@ fun <T> Parser<T>.peek() = { input: Parseable ->
  * @param next The terminal parser. It will not consume input on success
  */
 fun <S, T> Parser<S>.until(next: Parser<T>): Parser<Iterable<S>> =
-    next.peek().map { listOf<S>() }
-        .or(this.bind { x -> until(next).map { xs -> listOf(x) + xs } })
+    next.peek().mapTo(listOf<S>())
+        .or(this.bind { until(next).map { xs -> listOf(it) + xs } })
 
 /**
  * Given this parser, will return a parser that fails if the other parser succeeds

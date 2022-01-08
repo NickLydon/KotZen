@@ -11,6 +11,7 @@ import delimitedBy
 import except
 import many
 import map
+import mapTo
 import optional
 import or
 import parse
@@ -20,8 +21,8 @@ import text
 import token
 
 class JsonParser {
-    private val nullP = symbol("null").map { JsonToken.JsonNull }.token()
-    private val boolP = symbol("true").map { true }.or(symbol("false").map { false }).map { JsonToken.JsonBool(it) }.token()
+    private val nullP = symbol("null").mapTo(JsonToken.JsonNull).token()
+    private val boolP = symbol("true").mapTo(true).or(symbol("false").mapTo(false)).map { JsonToken.JsonBool(it) }.token()
     private val stringP =
         char('\\').bind { char }.or(char.except(char('"'))).many()
             .between(char('"'))
