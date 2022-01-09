@@ -44,11 +44,11 @@ typealias Parser<T> = (Parseable) -> ParserOutput<T>?
  * Wraps a string with a pointer to the head of the remaining unparsed input
  * to prevent repeatedly creating substrings
  */
-data class StringParseable(private val string: String, private val index : Int = 0) : Parseable {
-    override fun advance(steps: Int): Parseable = StringParseable(string, index + steps)
-    override fun remaining(): Int = 0.coerceAtLeast(string.length - index)
-    override fun head(): Char = string[index]
-    override fun unparsed(): String = string.substring(index)
+data class StringParseable(private val span: Span) : Parseable {
+    override fun advance(steps: Int): Parseable = StringParseable(span.substring(steps))
+    override fun remaining(): Int = span.length
+    override fun head(): Char = span.value[span.start]
+    override fun unparsed(): String = span.value.substring(span.start)
 }
 
 /**
@@ -56,7 +56,7 @@ data class StringParseable(private val string: String, private val index : Int =
  * @param index The start of the unparsed input
  * @return The wrapped string to input to a parser
  */
-fun String.parseable(index : Int = 0) = StringParseable(this, index)
+fun String.parseable(index : Int = 0) = StringParseable(Span(this, index))
 
 /**
  * Helper function to actually run the parser
@@ -128,7 +128,7 @@ fun Parser<Iterable<Char>>.text() = this.map { it.joinToString("") }
 /**
  * A parser that consumes a digit
  */
-val digit = sat { it.isDigit() }
+val digit = sat(Char::isDigit)
 
 /**
  * A parser that consumes at least one digit to create a number
@@ -148,7 +148,7 @@ val integer =
  */
 val decimal =
     integer.skipRight(char('.')).bind { i -> number.map { d -> "$i.$d".toDouble() } }
-        .or(integer.map { it.toDouble() })
+        .or(integer.map(Int::toDouble))
 
 /**
  * A parser that consumes a whitespace character according to the unicode standard
@@ -245,12 +245,16 @@ fun <T, S> Parser<T>.skipRight(next: Parser<S>) = this.bind { next.mapTo(it) }
  * @throws IllegalStateException When value is empty
  * @param value The string to match
  */
-fun symbol(value: String): Parser<String> =
-    if (value.isEmpty()) error("Expected a non-empty symbol")
-    else char(value[0]).bind {
-        if (value.length == 1) pure(it.toString())
-        else symbol(value.substring(1)).map { xs -> it + xs }
-    }
+fun symbol(value: String): Parser<String> = symbol(Span(value))
+
+/**
+ * Returns a parser that consumes a given string. This overload can be used to avoid string allocations
+ * @throws IllegalStateException When value is empty
+ * @param value The string/substring to match
+ */
+fun symbol(value: Span): Parser<String> =
+    if (value.length == 0) pure("")
+    else char(value.value[value.start]).bind { symbol(value.substring(1)).map { xs -> it + xs } }
 
 /**
  * Returns a parser that does not consume input, even if it succeeds
@@ -306,4 +310,14 @@ fun <T> Parser<T>.optional() = { input: Parseable ->
     val output = this(input)
     if (output == null) Pair(input, Option.None<T>())
     else Pair(output.first, Option.Some(output.second))
+}
+
+/**
+ * Helper class to simulate substrings of an original string
+ * @param value The original string
+ * @param start The head of the substring
+ */
+data class Span(val value: String, val start: Int = 0) {
+    val length = value.length - start
+    fun substring(start: Int) = Span(value, this.start + start)
 }

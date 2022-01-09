@@ -1,6 +1,5 @@
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 class SymbolTest {
     @Test
@@ -19,14 +18,8 @@ class SymbolTest {
     }
 
     @Test
-    fun emptyExpectedSymbolThrows() {
-        try {
-            symbol("")("abc".parseable())
-            fail("Should have thrown")
-        }
-        catch (e: IllegalStateException) {
-            assertEquals("Expected a non-empty symbol", e.message)
-        }
+    fun emptyExpectedSymbolReturnsEmpty() {
+        assertEquals(Pair("a".parseable(), ""), symbol("")("a".parseable()))
     }
 
     @Test
