@@ -23,8 +23,10 @@ testing {
 }
 
 sourdough {
-    githubOrg.set("")
-    githubRepo.set("kompendium")
+    libraryName.set("Kotzen Parser")
+    libraryDescription.set("Kotzen Parser Library")
+    githubOrg.set("unredundant")
+    githubRepo.set("kotzen")
     licenseName.set("MIT License")
     licenseUrl.set("https://mit-license.org")
     developerId.set("unredundant")
