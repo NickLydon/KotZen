@@ -1,7 +1,5 @@
 # KotZen
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/30a8a87e-939b-45ec-aab3-5e773f27ea96/deploy-status)](https://app.netlify.com/sites/kotzen/deploys)
-
 ## A parser combinator library in Kotlin
 
 Inspired by [Sprache](https://github.com/sprache/Sprache) and reading Graham Hutton's [Programming in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pih.html).
@@ -61,5 +59,3 @@ class JsonParser {
 }
 ```
 There's also a parser for a language which is almost a [subset of javascript](https://github.com/NickLydon/KotZen/blob/main/src/test/kotlin/javaScriptParsingExample/JSParser.kt).
-
-[Docs](https://kotzen.netlify.app/)

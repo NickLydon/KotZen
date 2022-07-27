@@ -1,3 +1,4 @@
+package io.github.unredundant.kotzen.parser
 
 /**
  * Input to the parser

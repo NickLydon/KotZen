@@ -1,3 +1,8 @@
+rootProject.name = "kotzen"
 
-rootProject.name = "KotZen"
+include("parser")
 
+// Set Project Gradle Names
+run {
+    rootProject.children.forEach { it.name = "${rootProject.name}-${it.name}" }
+}
