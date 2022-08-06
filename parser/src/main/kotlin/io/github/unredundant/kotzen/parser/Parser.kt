@@ -66,7 +66,7 @@ fun String.parseable(index : Int = 0) = StringParseable(Span(this, index))
  * @throws IllegalStateException When unparsed input remains, or cannot be parsed at all
  */
 fun <T> Parser<T>.parse(input: String): T {
-    val output = this(input.parseable()) ?: error("Invalid input")
+    val output = this(input.parseable()) ?: error("Invalid input: \n$input")
 
     if (!output.first.isEmpty()) error("Unconsumed input: " + output.first.unparsed())
 
